@@ -4,6 +4,73 @@
 # Disable file completions by default
 complete -c claude -f
 
+# Helper functions for dynamic completions
+function __claude_installed_plugins
+    set -l json (claude plugin list --json 2>/dev/null | string join ' ')
+    test -n "$json"; or return
+    set -l json (string replace -ra '\}\s*,\s*\{' '}\n{' -- $json)
+    for chunk in (string split \n -- $json)
+        set -l id (string match -r '"id"\s*:\s*"([^"]*)"' -- $chunk)[2]
+        if test -n "$id"
+            echo $id
+        end
+    end
+end
+
+function __claude_enabled_plugins
+    set -l json (claude plugin list --json 2>/dev/null | string join ' ')
+    test -n "$json"; or return
+    set -l json (string replace -ra '\}\s*,\s*\{' '}\n{' -- $json)
+    for chunk in (string split \n -- $json)
+        set -l id (string match -r '"id"\s*:\s*"([^"]*)"' -- $chunk)[2]
+        set -l enabled (string match -r '"enabled"\s*:\s*(true|false)' -- $chunk)[2]
+        if test -n "$id" -a "$enabled" = true
+            echo $id
+        end
+    end
+end
+
+function __claude_disabled_plugins
+    set -l json (claude plugin list --json 2>/dev/null | string join ' ')
+    test -n "$json"; or return
+    set -l json (string replace -ra '\}\s*,\s*\{' '}\n{' -- $json)
+    for chunk in (string split \n -- $json)
+        set -l id (string match -r '"id"\s*:\s*"([^"]*)"' -- $chunk)[2]
+        set -l enabled (string match -r '"enabled"\s*:\s*(true|false)' -- $chunk)[2]
+        if test -n "$id" -a "$enabled" = false
+            echo $id
+        end
+    end
+end
+
+function __claude_available_plugins
+    set -l json (claude plugin list --json --available 2>/dev/null | string join ' ')
+    test -n "$json"; or return
+    set -l available (string match -r '"available"\s*:\s*\[(.*)' -- $json)[2]
+    test -n "$available"; or return
+    set -l available (string replace -ra '\}\s*,\s*\{' '}\n{' -- $available)
+    for chunk in (string split \n -- $available)
+        set -l id (string match -r '"pluginId"\s*:\s*"([^"]*)"' -- $chunk)[2]
+        set -l desc (string match -r '"description"\s*:\s*"([^"]*)"' -- $chunk)[2]
+        if test -n "$id"
+            echo -e "$id\t$desc"
+        end
+    end
+end
+
+function __claude_marketplace_names
+    set -l json (claude plugin marketplace list --json 2>/dev/null | string join ' ')
+    test -n "$json"; or return
+    set -l json (string replace -ra '\}\s*,\s*\{' '}\n{' -- $json)
+    for chunk in (string split \n -- $json)
+        set -l name (string match -r '"name"\s*:\s*"([^"]*)"' -- $chunk)[2]
+        set -l source (string match -r '"source"\s*:\s*"([^"]*)"' -- $chunk)[2]
+        if test -n "$name"
+            echo -e "$name\t$source"
+        end
+    end
+end
+
 # Main options
 complete -c claude -l add-dir -d "Additional directories to allow tool access to"
 complete -c claude -l agent -d "Agent for the current session"
@@ -102,25 +169,40 @@ complete -c claude -n "__fish_seen_subcommand_from plugin" -xa "validate" -d "Va
 
 # Plugin install options
 complete -c claude -n "__fish_seen_subcommand_from plugin; and __fish_seen_subcommand_from install i" -s s -l scope -xa "user project local" -d "Installation scope"
+# Plugin install dynamic completions (available plugins)
+complete -c claude -n "__fish_seen_subcommand_from plugin; and __fish_seen_subcommand_from install i" -xa "(__claude_available_plugins)"
 
 # Plugin uninstall options
 complete -c claude -n "__fish_seen_subcommand_from plugin; and __fish_seen_subcommand_from uninstall remove" -s s -l scope -xa "user project local" -d "Uninstall from scope"
+# Plugin uninstall dynamic completions (installed plugins)
+complete -c claude -n "__fish_seen_subcommand_from plugin; and __fish_seen_subcommand_from uninstall remove" -xa "(__claude_installed_plugins)"
 
 # Plugin enable options
 complete -c claude -n "__fish_seen_subcommand_from plugin; and __fish_seen_subcommand_from enable" -s s -l scope -xa "user project local" -d "Installation scope"
+# Plugin enable dynamic completions (disabled plugins)
+complete -c claude -n "__fish_seen_subcommand_from plugin; and __fish_seen_subcommand_from enable" -xa "(__claude_disabled_plugins)"
 
 # Plugin disable options
 complete -c claude -n "__fish_seen_subcommand_from plugin; and __fish_seen_subcommand_from disable" -s a -l all -d "Disable all enabled plugins"
 complete -c claude -n "__fish_seen_subcommand_from plugin; and __fish_seen_subcommand_from disable" -s s -l scope -xa "user project local" -d "Installation scope"
+# Plugin disable dynamic completions (enabled plugins)
+complete -c claude -n "__fish_seen_subcommand_from plugin; and __fish_seen_subcommand_from disable" -xa "(__claude_enabled_plugins)"
 
 # Plugin update options
 complete -c claude -n "__fish_seen_subcommand_from plugin; and __fish_seen_subcommand_from update" -s s -l scope -xa "user project local managed" -d "Installation scope"
+# Plugin update dynamic completions (installed plugins)
+complete -c claude -n "__fish_seen_subcommand_from plugin; and __fish_seen_subcommand_from update" -xa "(__claude_installed_plugins)"
 
 # Plugin marketplace subcommands
 complete -c claude -n "__fish_seen_subcommand_from plugin; and __fish_seen_subcommand_from marketplace" -xa "add" -d "Add a marketplace from a URL, path, or GitHub repo"
 complete -c claude -n "__fish_seen_subcommand_from plugin; and __fish_seen_subcommand_from marketplace" -xa "list" -d "List all configured marketplaces"
 complete -c claude -n "__fish_seen_subcommand_from plugin; and __fish_seen_subcommand_from marketplace" -xa "remove rm" -d "Remove a configured marketplace"
 complete -c claude -n "__fish_seen_subcommand_from plugin; and __fish_seen_subcommand_from marketplace" -xa "update" -d "Update marketplace(s) from their source"
+
+# Plugin marketplace remove dynamic completions
+complete -c claude -n "__fish_seen_subcommand_from plugin; and __fish_seen_subcommand_from marketplace; and __fish_seen_subcommand_from remove rm" -xa "(__claude_marketplace_names)"
+# Plugin marketplace update dynamic completions
+complete -c claude -n "__fish_seen_subcommand_from plugin; and __fish_seen_subcommand_from marketplace; and __fish_seen_subcommand_from update" -xa "(__claude_marketplace_names)"
 
 # Plugin marketplace list options
 complete -c claude -n "__fish_seen_subcommand_from plugin; and __fish_seen_subcommand_from marketplace; and __fish_seen_subcommand_from list" -l json -d "Output as JSON"

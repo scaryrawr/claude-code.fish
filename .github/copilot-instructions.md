@@ -15,6 +15,18 @@ Single-file completion script at `completions/claude.fish`. Fish automatically l
 - Use `-s` for short flags and `-l` for long flags
 - Use `-d` for descriptions — should match the CLI help text
 
+### Dynamic completions
+
+Helper functions (`__claude_*`) call `claude` CLI with `--json` at tab-completion time to provide live argument suggestions:
+
+- `__claude_installed_plugins` — all installed plugin IDs
+- `__claude_enabled_plugins` — only enabled plugin IDs
+- `__claude_disabled_plugins` — only disabled plugin IDs
+- `__claude_available_plugins` — available plugins from marketplaces (with descriptions)
+- `__claude_marketplace_names` — configured marketplace names (with source type)
+
+These are invoked via `-xa "(__claude_function_name)"` in completion lines. They parse JSON using `string match -r` and `string replace` (no `jq` dependency). When adding new dynamic completions, follow this pattern.
+
 ## Testing Changes
 
 ```fish

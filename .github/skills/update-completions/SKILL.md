@@ -94,7 +94,19 @@ complete -c claude -n "__fish_seen_subcommand_from parent" -xa "child" -d "Descr
 complete -c claude -n "__fish_seen_subcommand_from subcmd" -l flag -d "Description"
 ```
 
-#### Conventions
+#### Dynamic completions (helper functions)
+
+The file contains `__claude_*` helper functions that call `claude` CLI with
+`--json` at tab-completion time. These provide live argument suggestions for
+plugin and marketplace subcommands. When updating:
+
+- **Do not remove or rename** the helper functions unless the underlying CLI
+  commands change.
+- If a new subcommand accepts a plugin or marketplace name as a positional
+  argument, add a dynamic completion line using the appropriate helper function
+  (e.g., `-xa "(__claude_installed_plugins)"`).
+- Helper functions parse JSON using `string match -r` / `string replace` — no
+  `jq` dependency.
 
 - Keep `complete -c claude -f` as the first line (disables file completions).
 - Group related completions together with comments.
@@ -109,9 +121,12 @@ source completions/claude.fish
 complete -C "claude "
 complete -C "claude mcp "
 complete -C "claude --output-format "
+complete -C "claude plugin install "
+complete -C "claude plugin marketplace remove "
 ```
 
-Verify that new completions appear and no errors are raised.
+Verify that new completions appear, dynamic completions return expected values,
+and no errors are raised.
 
 ### 5. Summarize changes
 
