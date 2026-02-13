@@ -53,7 +53,7 @@ function __claude_available_plugins
         set -l id (string match -r '"pluginId"\s*:\s*"([^"]*)"' -- $chunk)[2]
         set -l desc (string match -r '"description"\s*:\s*"([^"]*)"' -- $chunk)[2]
         if test -n "$id"
-            echo -e "$id\t$desc"
+            printf '%s\t%s\n' "$id" "$desc"
         end
     end
 end
@@ -66,7 +66,7 @@ function __claude_marketplace_names
         set -l name (string match -r '"name"\s*:\s*"([^"]*)"' -- $chunk)[2]
         set -l source (string match -r '"source"\s*:\s*"([^"]*)"' -- $chunk)[2]
         if test -n "$name"
-            echo -e "$name\t$source"
+            printf '%s\t%s\n' "$name" "$source"
         end
     end
 end
@@ -86,6 +86,7 @@ complete -c claude -s d -l debug -d "Enable debug mode with optional category fi
 complete -c claude -l debug-file -d "Write debug logs to a specific file path"
 complete -c claude -l disable-slash-commands -d "Disable all skills"
 complete -c claude -l disallowedTools -l disallowed-tools -d "Comma or space-separated list of tool names to deny"
+complete -c claude -l effort -xa "low medium high" -d "Effort level for the current session"
 complete -c claude -l fallback-model -d "Enable automatic fallback to specified model"
 complete -c claude -l file -d "File resources to download at startup"
 complete -c claude -l fork-session -d "When resuming, create a new session ID"
@@ -175,7 +176,7 @@ complete -c claude -n "__fish_seen_subcommand_from plugin; and __fish_seen_subco
 # Plugin uninstall options
 complete -c claude -n "__fish_seen_subcommand_from plugin; and __fish_seen_subcommand_from uninstall remove" -s s -l scope -xa "user project local" -d "Uninstall from scope"
 # Plugin uninstall dynamic completions (installed plugins)
-complete -c claude -n "__fish_seen_subcommand_from plugin; and __fish_seen_subcommand_from uninstall remove" -xa "(__claude_installed_plugins)"
+complete -c claude -n "__fish_seen_subcommand_from plugin; and __fish_seen_subcommand_from uninstall remove; and not __fish_seen_subcommand_from marketplace" -xa "(__claude_installed_plugins)"
 
 # Plugin enable options
 complete -c claude -n "__fish_seen_subcommand_from plugin; and __fish_seen_subcommand_from enable" -s s -l scope -xa "user project local" -d "Installation scope"
@@ -191,7 +192,7 @@ complete -c claude -n "__fish_seen_subcommand_from plugin; and __fish_seen_subco
 # Plugin update options
 complete -c claude -n "__fish_seen_subcommand_from plugin; and __fish_seen_subcommand_from update" -s s -l scope -xa "user project local managed" -d "Installation scope"
 # Plugin update dynamic completions (installed plugins)
-complete -c claude -n "__fish_seen_subcommand_from plugin; and __fish_seen_subcommand_from update" -xa "(__claude_installed_plugins)"
+complete -c claude -n "__fish_seen_subcommand_from plugin; and __fish_seen_subcommand_from update; and not __fish_seen_subcommand_from marketplace" -xa "(__claude_installed_plugins)"
 
 # Plugin marketplace subcommands
 complete -c claude -n "__fish_seen_subcommand_from plugin; and __fish_seen_subcommand_from marketplace" -xa "add" -d "Add a marketplace from a URL, path, or GitHub repo"
